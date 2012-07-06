@@ -3,6 +3,9 @@ require 'bson'
 require 'uri'
 require 'socket'
 
+require 'vtocc/vtocc_connection'
+require 'vtocc/cursor'
+
 module Vtocc
 
   class GoRpcError < StandardError; end
@@ -13,7 +16,7 @@ module Vtocc
     attr_accessor :header, :body
     def initialize(header, args)
       @header = header
-      @args = args
+      @body = args
     end
 
     def sequence_id
@@ -46,13 +49,15 @@ module Vtocc
       socket_timeout = @timeout / 10.0
       # TODO(burke) handle timeout. Ruby blows at this.
       @conn = TCPSocket.new(uri.host, uri.port)
-      @conn.send("CONNECT #{uri.path} HTTP/1.0\n\n")
+      @conn.sendmsg("CONNECT #{uri.path} HTTP/1.0\n\n")
 
       loop do
         data = @conn.recv(1024)
+        sleep 0.1
         data or raise GoRpcError, "Unexpected EOF in handshake"
-        return if data.index("\n\n")
+        break if data.index("\n\n")
       end
+      return self
     end
 
     def close
@@ -64,12 +69,13 @@ module Vtocc
 
     def write_request(request_data)
       @start_time = Time.now
-      @conn.send(request_data)
+      @conn.sendmsg(request_data)
     end
 
     def read_response
       @start_time or raise GoRpcError, "no request pending"
 
+      # TODO(burke) should we do this deadline thing, or...?
       begin
         buf = []
         data, data_len = read_more(buf)
@@ -122,6 +128,7 @@ module Vtocc
 
   class GoRpcClient
 
+    attr_accessor :response
     def initialize(uri, timeout)
       @uri = uri
       @timeout = timeout
@@ -151,29 +158,29 @@ module Vtocc
       raise NotImplementedError
     end
 
-    def call(method, request, response = nil)
+    def call(method, request, resp = nil)
       begin
         h = GoRpcClient.make_header(method, next_sequence_id)
         req = GoRpcRequest.new(h, request)
-        @conn.write_request(encode_request(req))
+        conn.write_request(encode_request(req))
         data = @conn.read_response
-        @response ||= GoRpcResponse.new
-        decode_response(@response, data)
+        self.response ||= GoRpcResponse.new
+        decode_response(self.response, data)
         # TODO(burke) handle timeout
       rescue SocketError => e
         close
         raise GoRpcError, "#{e.message} method:#{method}"
       end
 
-      if response.error
+      if self.response.error.size > 0
         raise AppError, "#{response.error}, method:#{method}"
       end
-      if response.sequence_id != req.sequence_id
+      if self.response.sequence_id != req.sequence_id
         close
         raise GoRpcError, "request sequence mismatch: #{response.sequence_id} != #{req.sequence_id} method:#{method}"
       end
 
-      response
+      self.response
     end
 
     def self.make_header(method, sequence_id)
@@ -188,7 +195,7 @@ module Vtocc
 
     def encode_request(request)
       body = request.body
-      Hash === request.body or body = {WRAPPED_FIELD: body}
+      Hash === request.body or body = {WRAPPED_FIELD => body}
 
       buf = BSON.serialize(request.header)
       buf.append!(BSON.serialize(body))
@@ -198,7 +205,6 @@ module Vtocc
     end
 
     def decode_response(response, data)
-      offset, response.header = BSON.deserialize(data)
       index = data[0..3].unpack("V")[0]
       response.header = BSON.deserialize(data[0..index-1])
       response.reply = BSON.deserialize(data[index..-1])
