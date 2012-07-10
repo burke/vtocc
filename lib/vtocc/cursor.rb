@@ -14,19 +14,19 @@ module Vtocc
       @results = nil
     end
 
-    def execute(sql, bind_variables)
+    def execute(*args)
       @rowcount = 0
       @results = nil
       @description = nil
       @lastrowid = nil
 
-      case sql.strip.downcase
+      case args.first.strip.downcase
       when 'begin'    ; @connection.begin    ; return
       when 'commit'   ; @connection.commit   ; return
       when 'rollback' ; @connection.rollback ; return
       end
 
-      resp = @connection.execute(sql, bind_variables)
+      resp = @connection._execute(*args)
       @results, @rowcount, @lastrowid, @description = resp
       @index = 0
 

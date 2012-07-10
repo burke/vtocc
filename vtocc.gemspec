@@ -17,4 +17,6 @@ Gem::Specification.new do |gem|
 
   gem.add_dependency 'bson'
   gem.add_dependency 'bson_ext'
+
+  gem.add_development_dependency 'mysql2'
 end

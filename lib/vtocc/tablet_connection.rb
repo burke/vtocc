@@ -29,15 +29,15 @@ module Vtocc
     end
 
     def begin
-      if @transaction_id
-        raise NotSupportedError, "Nested transactions not supported"
+      if @transaction_id && @transaction_id != 0
+        raise NotImplementedError, "Nested transactions not supported"
       end
       req = make_req
       begin
         response = @client.call('SqlQuery.Begin', req)
         @transaction_id = response.reply
       rescue GoRpcError => e
-        raise OperationalError
+        raise OperationalError, e.message
       end
     end
 
@@ -55,7 +55,7 @@ module Vtocc
         response = @client.call('SqlQuery.Commit', req)
         return response.reply
       rescue GoRpcError => e
-        raise OperationalError
+        raise OperationalError, e.message
       end
     end
 
@@ -72,12 +72,15 @@ module Vtocc
         return response.reply
       begin
       rescue GoRpcError
-        raise OperationalError
+        raise OperationalError, e.message
       end
     end
 
     def convert_bind_vars(a); a; end
-    def execute(sql, bind_variables)
+
+    # in general, you don't really want to call this.
+    # you should interface through the cursor.
+    def _execute(sql, bind_variables)
       binds = convert_bind_vars(bind_variables) # TODO
       req = make_req
       req['Sql'] = sql
@@ -101,8 +104,8 @@ module Vtocc
 
         rowcount = reply['RowsAffected']
         lastrowid = reply['InsertId']
-      rescue GoRpcError
-        raise OperationalError
+      rescue GoRpcError => e
+        raise OperationalError, e.message
       #rescue
         # log low-level error TODO
       end

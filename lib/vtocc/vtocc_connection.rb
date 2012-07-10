@@ -1,4 +1,5 @@
 require 'vtocc/tablet_connection'
+require 'vtocc/query_reshaper'
 
 module Vtocc
   class VtoccConnection < TabletConnection
@@ -12,18 +13,28 @@ module Vtocc
       conn
     end
 
+    def alive?
+      @client.call('OccManager.GetSessionId', @dbname) > 0
+    rescue GoRpcError
+      return false
+    end
+
 
     def dial
       super
       begin
         response = @client.call('OccManager.GetSessionId', @dbname)
         @session_id = response.reply
-      rescue GoRpcError
-        raise OperationalError
+      rescue GoRpcError => e
+        raise OperationalError, e.message
       end
     end
 
-    private
+    def _execute(*ary)
+      sql, bind_variables = QueryReshaper.call(ary)
+
+      super(sql, bind_variables)
+    end
 
   end
 end

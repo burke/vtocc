@@ -1,0 +1,9 @@
+{
+  "charset": "utf8",
+  "dbname": "vitess",
+  "host": "localhost",
+  "pass": "vitess",
+  "port": 3306,
+  "uname": "vitess",
+  "unix_socket": "/tmp/mysql.sock"
+}

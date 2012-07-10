@@ -11,6 +11,7 @@ module Vtocc
   class GoRpcError < StandardError; end
   class AppError < GoRpcError; end
   class TimeoutError < GoRpcError; end
+  class OperationalError < GoRpcError; end
 
   class GoRpcRequest
     attr_accessor :header, :body

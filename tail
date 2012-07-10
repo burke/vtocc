@@ -1,0 +1,26 @@
+flag provided but not defined: -1
+Usage of /Users/burke/src/code.google.com/p/vitess/go/cmd/vtocc/vtocc:
+flag provided but not defined: -1
+Usage of /Users/burke/src/code.google.com/p/vitess/go/cmd/vtocc/vtocc:
+  -config="": config file name
+  -dbconfig="": db config file name
+  -lame-duck-period=30: how long to give in-flight transactions to finish
+  -logfile="/dev/stderr": base log file name
+  -logfile.frequency=0: rotation frequency in seconds
+  -config="": config file name
+  -dbconfig="": db config file name
+  -lame-duck-period=30: how long to give in-flight transactions to finish
+  -logfile="/dev/stderr": base log file name
+  -logfile.frequency=0: rotation frequency in seconds
+  -logfile.maxfiles=0: max number of log files
+  -logfile.maxfiles=0: max number of log files
+  -logfile.maxsize=0: max file size in bytes
+  -max-open-fds=32768: max open file descriptors
+  -logfile.maxsize=0: max file size in bytes
+  -max-open-fds=32768: max open file descriptors
+  -mem-profile-rate=524288: profile every n bytes allocated
+  -mem-profile-rate=524288: profile every n bytes allocated
+  -querylog="": for testing: log all queries to this file
+  -querylog="": for testing: log all queries to this file
+  -rebind-delay=0: artificial delay before rebinding a hijacked listener
+  -rebind-delay=0: artificial delay before rebinding a hijacked listener
